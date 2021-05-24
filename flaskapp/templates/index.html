@@ -20,14 +20,47 @@ Using these features, a linear regression is able to very closely predict the me
 <form action="/result">
   <div class="panel">
     <ul>
-    <li>Locale: <input type='text' name='locale' value="11"></li>
-    <li>Degree Field: <input type='text' name='cip' value="Electrical, Electronics and Communications Engineering."></li>
-    <li>Credential: <input type='text' name='cred' value="Bachelors Degree"></li>
-    <li>College Type:<select name='collegetype' method="GET" action="/">
-      {% for ctype in col_list %}
-      <option value= "{{ctype}}" SELECTED>{{ctype}}</option>"
-      {% endfor %}
-    </select></li>
+
+    <li>Locale: 
+      <select name='locale' method="GET" action="/">
+        {% for loctype in locale_dict %}
+        <option value= "{{loctype[1]}}" SELECTED>{{loctype[0]}}</option>"
+        {% endfor %}
+      </select>
+    </li>
+
+    <li>Region: 
+      <select name='region' method="GET" action="/">
+        {% for regtype in reg_dict %}
+        <option value= "{{regtype[1]}}" SELECTED>{{regtype[0]}}</option>"
+        {% endfor %}
+      </select>
+    </li>
+
+    <li>Degree Field: 
+      <select name='cip' method="GET" action="/">
+        {% for ciptype in cip_list %}
+        <option value= "{{ciptype}}" SELECTED>{{ciptype}}</option>"
+        {% endfor %}
+      </select>
+    </li>
+
+    <li>Credential: 
+      <select name='cred' method="GET" action="/">
+        {% for credtype in cred_list %}
+        <option value= "{{credtype}}" SELECTED>{{credtype}}</option>"
+        {% endfor %}
+      </select>
+    </li>
+
+    <li>College Type: 
+      <select name='collegetype' method="GET" action="/">
+        {% for ctype in col_list %}
+        <option value= "{{ctype}}" SELECTED>{{ctype}}</option>"
+        {% endfor %}
+      </select>
+    </li>
+
   </ul>
 
   </div>
@@ -39,6 +72,5 @@ Using these features, a linear regression is able to very closely predict the me
 
 
 
-<h1>Model R^2</h1>
-<p>{{ modscore }}</p>
+<p><b>Model R^2</b>: {{ modscore }}</p>
 {% endblock %}

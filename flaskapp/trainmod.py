@@ -1,4 +1,5 @@
 from flask import Flask, redirect, url_for, render_template, request, flash
+from numpy.core.numeric import cross
 from sklearn.model_selection import train_test_split
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import SimpleImputer, IterativeImputer
@@ -58,13 +59,22 @@ app = Flask(__name__)
 
 df = load_data()
 X, y = split_data(df)
+
+creds = sorted(list(df['CREDDESC'].unique()))
+cips = sorted(list(df['CIPDESC_new'].unique()))
+
 modobj, modscore = trainmodel(X, y)
 
 
 @app.route("/")
 def index():
     # Main page
-    return render_template('index.html', modscore = modscore, col_list = crosswalks.coltype)
+    return render_template('index.html', modscore = modscore, 
+    col_list = crosswalks.coltype, 
+    reg_dict = crosswalks.reg,
+    locale_dict = crosswalks.locs, 
+    cip_list = cips,
+    cred_list = creds)
 
 @app.route('/result')
 def result(modobj=modobj):
@@ -72,20 +82,14 @@ def result(modobj=modobj):
     loc_val = request.args.get('locale', '')
     cip_val = request.args.get('cip', '')
     cred_val = request.args.get('cred', '')
+    reg_val = request.args.get('region', '')
     collegetype_val = request.args.get('collegetype', '')
 
-    if loc_val == '':
-        loc_val = '11'
-    if cip_val == '':
-        cip_val = 'Electrical, Electronics and Communications Engineering.'
-    if cred_val == '':
-        cred_val = 'Bachelors Degree'
-
     sat=800
-    cred=cred_val#Bachelors Degree'
+    cred=cred_val
     cip=cip_val
-    col=collegetype_val#'Private, nonprofit'
-    reg='1'
+    col=collegetype_val
+    reg=reg_val
     tuit=60000
     loc=loc_val
     adm=.1
@@ -97,5 +101,5 @@ def result(modobj=modobj):
     pred_final = prediction if prediction > 0 else np.nan
 
     return render_template('result.html', locale = loc_val, 
-        collegetype=collegetype_val, cip = cip_val, 
-        cred = cred_val, pred_final=pred_final)
+        collegetype = collegetype_val, cip = cip_val, 
+        cred = cred_val, pred_final = pred_final, region=reg_val)
