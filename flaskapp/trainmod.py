@@ -26,7 +26,6 @@ def load_data():
     )
     return major
 
-
 def split_data(df):
     
     X = df[['SAT_AVG_ALL','CREDDESC', 'CIPDESC_new',
@@ -54,19 +53,22 @@ def trainmodel(X, y):
     return pipe, pipe.score(X_test,y_test)
 
 
-#def create_app():
+def train_model():
+    df = load_data()
+    X, y = split_data(df)
+
+    modobj, modscore = trainmodel(X, y)
+    return modobj, modscore, df
+
+
 app = Flask(__name__)
-
-df = load_data()
-X, y = split_data(df)
-
+modobj, modscore, df = train_model()
 creds = sorted(list(df['CREDDESC'].unique()), reverse = True)
 cips = sorted(list(df['CIPDESC_new'].unique()), reverse = True)
 crosswalks.coltype = sorted(crosswalks.coltype)
 crosswalks.reg = sorted(crosswalks.reg, reverse = True)
 crosswalks.locs = sorted(crosswalks.locs, reverse = True)
 
-modobj, modscore = trainmodel(X, y)
 
 @app.route("/")
 def index():
@@ -95,14 +97,14 @@ def result(modobj=modobj):
     collegetype_val = request.args.get('coltype', '')
     sat_val = request.args.get('sat_number', '', type= int)
 
-    sat= 800#sat_val
+    sat= sat_val
     cred=cred_val
     cip=cip_val
     col=collegetype_val
     reg=reg_val
-    tuit=60000
+    tuit=tuit_val
     loc=loc_val
-    adm=.1
+    adm=adm_val
 
     newdf = pd.DataFrame([[sat, cred, cip, col, reg, tuit, loc, adm]], 
         columns = ['SAT_AVG_ALL','CREDDESC', 'CIPDESC_new','CONTROL', 'REGION', 'tuition', 'LOCALE', 'ADM_RATE_ALL'])
@@ -110,8 +112,15 @@ def result(modobj=modobj):
     [[prediction]] = modobj.predict(newdf)
     pred_final = prediction if prediction > 0 else np.nan
 
-    return render_template('result.html', locale = loc_val, 
-        collegetype = collegetype_val, cip = cip_val, 
-        cred = cred_val, pred_final = round(pred_final, 2), region=reg_val,
-        sat=sat_val, tuit = tuit_val,
-        adm = adm_val)
+    return render_template(
+        'result.html', 
+        locale = loc_val, 
+        collegetype = collegetype_val, 
+        cip = cip_val, 
+        cred = cred_val, 
+        pred_final = round(pred_final, 2), 
+        region=reg_val,
+        sat=sat_val, 
+        tuit = tuit_val,
+        adm = adm_val
+    )
