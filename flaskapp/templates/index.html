@@ -1,0 +1,44 @@
+{% extends "design.html" %} {% block content %}
+
+<h2>Predict Earnings by College Choices</h2>
+In this model, several characteristics are used to predict median earnings two years after degree completion.
+
+<ul style="line-height: 1.5">
+    <li>Geographic location of college</li>
+    <li>Type of college (public/private/for-profit, size)</li>
+    <li>Major field of study (CIP code)</li>
+    <li>Credential (Bachelor, Master, etc)</li>
+    <li>Admission rate</li>
+    <li>Average SAT score for admitted students (proxy for college prestige)</li>
+</ul>
+
+Using these features, a linear regression is able to very closely predict the median earnings for a graduate. Try it and see!
+
+<hr>
+<h2> Enter your choices... </h2>
+
+<form action="/result">
+  <div class="panel">
+    <ul>
+    <li>Locale: <input type='text' name='locale' value="11"></li>
+    <li>Degree Field: <input type='text' name='cip' value="Electrical, Electronics and Communications Engineering."></li>
+    <li>Credential: <input type='text' name='cred' value="Bachelors Degree"></li>
+    <li>College Type:<select name='collegetype' method="GET" action="/">
+      {% for ctype in col_list %}
+      <option value= "{{ctype}}" SELECTED>{{ctype}}</option>"
+      {% endfor %}
+    </select></li>
+  </ul>
+
+  </div>
+  <div style="margin-bottom: 2rem;">
+    <input type="submit" value="Submit" class="button"/>
+    <input type="reset" value="Clear" class="button" />
+  </div>
+</form>
+
+
+
+<h1>Model R^2</h1>
+<p>{{ modscore }}</p>
+{% endblock %}
