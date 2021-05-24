@@ -60,21 +60,28 @@ app = Flask(__name__)
 df = load_data()
 X, y = split_data(df)
 
-creds = sorted(list(df['CREDDESC'].unique()))
-cips = sorted(list(df['CIPDESC_new'].unique()))
+creds = sorted(list(df['CREDDESC'].unique()), reverse = True)
+cips = sorted(list(df['CIPDESC_new'].unique()), reverse = True)
+crosswalks.coltype = sorted(crosswalks.coltype)
+crosswalks.reg = sorted(crosswalks.reg, reverse = True)
+crosswalks.locs = sorted(crosswalks.locs, reverse = True)
 
 modobj, modscore = trainmodel(X, y)
-
 
 @app.route("/")
 def index():
     # Main page
-    return render_template('index.html', modscore = modscore, 
+    return render_template('index.html', 
+    modscore = round(modscore,3), 
     col_list = crosswalks.coltype, 
     reg_dict = crosswalks.reg,
     locale_dict = crosswalks.locs, 
     cip_list = cips,
-    cred_list = creds)
+    cred_list = creds,
+    tuit_min = min(round(df['tuition'].astype(float), 1)),
+    tuit_max = max(round(df['tuition'].astype(float), 1)),
+    adm_min = min(df['ADM_RATE_ALL'].astype(float)),
+    adm_max = max(df['ADM_RATE_ALL'].astype(float)))
 
 @app.route('/result')
 def result(modobj=modobj):
@@ -83,9 +90,12 @@ def result(modobj=modobj):
     cip_val = request.args.get('cip', '')
     cred_val = request.args.get('cred', '')
     reg_val = request.args.get('region', '')
-    collegetype_val = request.args.get('collegetype', '')
+    adm_val = request.args.get('adm', '', type= float)
+    tuit_val = request.args.get('tuit', '', type= int)
+    collegetype_val = request.args.get('coltype', '')
+    sat_val = request.args.get('sat_number', '', type= int)
 
-    sat=800
+    sat= 800#sat_val
     cred=cred_val
     cip=cip_val
     col=collegetype_val
@@ -102,4 +112,6 @@ def result(modobj=modobj):
 
     return render_template('result.html', locale = loc_val, 
         collegetype = collegetype_val, cip = cip_val, 
-        cred = cred_val, pred_final = pred_final, region=reg_val)
+        cred = cred_val, pred_final = round(pred_final, 2), region=reg_val,
+        sat=sat_val, tuit = tuit_val,
+        adm = adm_val)

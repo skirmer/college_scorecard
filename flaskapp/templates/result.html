@@ -1,14 +1,20 @@
 {% extends "design.html" %} {% block content %}
+<h2>Predict Earnings by College Choices</h2>
 
+
+<h3>Your Selections:</h3>
 <ul>
     <li>Locale: {{locale}} </li>
     <li>Credential: {{cip}} </li>
     <li>Degree Field: {{cred}} </li>
     <li>College Type: {{collegetype}} </li>
     <li>Region: {{region}} </li>
+    <li>Average Admitted SAT Score: {{sat}} </li>
+    <li>Average Tuition: {{"${:,.0f}".format(tuit)}} </li>
+    <li>Admission Rate: {{adm}} </li>
 </ul>
 
 <h2> Model Predicts... </h2>
-<h4>{{pred_final}}</h4>
+Two years after graduating, median earnings should be roughly <b> {{"${:,.2f}".format(pred_final)}} </b>per year.
 
 {% endblock %}

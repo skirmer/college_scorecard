@@ -54,23 +54,36 @@ Using these features, a linear regression is able to very closely predict the me
     </li>
 
     <li>College Type: 
-      <select name='collegetype' method="GET" action="/">
-        {% for ctype in col_list %}
-        <option value= "{{ctype}}" SELECTED>{{ctype}}</option>"
+      <select name='coltype' method="GET" action="/">
+        {% for coltype in col_list %}
+        <option value= "{{coltype}}" SELECTED>{{coltype}}</option>"
         {% endfor %}
       </select>
     </li>
 
+    <li>Average Admitted SAT Score: 
+      <input type="range" name="sat" min="0" max="1600" value = "800" onchange="this.form.sat_number.value=this.value" />
+      <input type="number" name="sat_number" min="0" max="1600" value="800" oninput="this.form.sat.value=this.value" />
+    </li>
+
+    <li>Average Tuition: 
+      <input type="range" name="tuit" min='0' max='{{tuit_max}}' value = "10000" step = 1 onchange="this.form.tuit_number.value=this.value" />
+      <input type="number" name="tuit_number" min='0' max='{{tuit_max}}' value="10000" step = 1 oninput="this.form.tuit.value=this.value" />
+    </li>
+
+    <li>Admission Rate (Percent): 
+      <input type="range" name="adm" min='{{adm_min}}' max='{{adm_max}}' value = ".35" step = .01 onchange="this.form.adm_number.value=this.value" />
+      <input type="number" name="adm_number" min='{{adm_min}}' max='{{adm_max}}' value=".35" step = .01 oninput="this.form.adm.value=this.value" />
+    </li>
   </ul>
 
   </div>
   <div style="margin-bottom: 2rem;">
     <input type="submit" value="Submit" class="button"/>
-    <input type="reset" value="Clear" class="button" />
+    <input type="reset" value="Reset Values" class="button" />
   </div>
 </form>
 
-
-
+<hr>
 <p><b>Model R^2</b>: {{ modscore }}</p>
 {% endblock %}
