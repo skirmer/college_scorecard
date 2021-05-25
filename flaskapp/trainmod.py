@@ -12,6 +12,12 @@ import pandas as pd
 import numpy as np
 import s3fs
 import crosswalks
+import numpy as np
+from bokeh.plotting import figure
+from bokeh.embed import components
+from bokeh.models import Span
+from bokeh.models import NumeralTickFormatter
+
 
 
 def load_data():
@@ -60,6 +66,43 @@ def train_model():
     modobj, modscore = trainmodel(X, y)
     return modobj, modscore, df
 
+def plot_hist(df, prediction=1):
+    hist, edges = np.histogram(df['EARN_MDN_HI_2YR'].astype(int), bins = 40)
+
+    p = figure(
+        title="Histogram of Earnings, All Fields",
+        y_axis_label="Count",
+        x_axis_label="Earnings",
+        width=750,
+        height=300,
+    )
+
+    p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:])
+    vline = Span(location=prediction, dimension='height', line_color='red', line_width=3)
+    p.renderers.extend([vline])
+    p.xaxis[0].formatter = NumeralTickFormatter(format="$%.0f")
+
+    return p
+
+
+def plot_groupdist(df, prediction=1, majorfield = 'Accounting and Related Services.'):  
+    hist, edges = np.histogram(df[df.CIPDESC_new == majorfield]['EARN_MDN_HI_2YR'].astype(int), bins = 40)
+
+    p = figure(
+        title=f"Histogram of Earnings, {majorfield}",
+        y_axis_label="Count",
+        x_axis_label="Earnings",
+        width=750,
+        height=300,
+    )
+
+    p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:])
+    vline = Span(location=prediction, dimension='height', line_color='red', line_width=3)
+    p.renderers.extend([vline])
+    p.xaxis[0].formatter = NumeralTickFormatter(format="$%.0f")
+
+    return p
+    
 
 app = Flask(__name__)
 modobj, modscore, df = train_model()
@@ -86,7 +129,7 @@ def index():
     adm_max = max(df['ADM_RATE_ALL'].astype(float)))
 
 @app.route('/result')
-def result(modobj=modobj):
+def result(modobj=modobj, df=df):
 
     loc_val = request.args.get('locale', '')
     cip_val = request.args.get('cip', '')
@@ -112,6 +155,11 @@ def result(modobj=modobj):
     [[prediction]] = modobj.predict(newdf)
     pred_final = prediction if prediction > 0 else np.nan
 
+    p1 = plot_hist(df=df, prediction=pred_final)
+    p2 = plot_groupdist(df=df, prediction=pred_final, majorfield=cip)
+    script, div = components(p1)
+    script2, div2 = components(p2)
+
     return render_template(
         'result.html', 
         locale = loc_val, 
@@ -122,5 +170,7 @@ def result(modobj=modobj):
         region=reg_val,
         sat=sat_val, 
         tuit = tuit_val,
-        adm = adm_val
-    )
+        adm = adm_val,
+        script=script, div=div,
+        script2=script2, div2=div2
+   )

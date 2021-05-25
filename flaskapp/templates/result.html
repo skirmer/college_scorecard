@@ -1,4 +1,15 @@
-{% extends "design.html" %} {% block content %}
+{% extends "design.html" %}
+
+{% block head %}
+<!-- Load BokehJS components -->
+<script type="text/javascript" src="http://cdn.pydata.org/bokeh/release/bokeh-2.3.2.min.js"></script>
+
+    {{ script | safe }}
+
+    {{ script2 | safe }}
+{% endblock %}
+
+{% block content %}
 <h2>Predict Earnings by College Choices</h2>
 
 
@@ -18,5 +29,9 @@
 Two years after graduating, median earnings should be roughly <b> {{"${:,.2f}".format(pred_final)}} </b>per year.
 
 <p style="font-size: 12px;"> If combination of values is extremely rare/unlikely in training data, model may return NA.</p>
+
+{{ div | safe }}
+
+{{ div2 | safe }}
 
 {% endblock %}
