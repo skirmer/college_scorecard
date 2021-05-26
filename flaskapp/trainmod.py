@@ -1,5 +1,4 @@
 from flask import Flask, redirect, url_for, render_template, request, flash
-from numpy.core.numeric import cross
 from sklearn.model_selection import train_test_split
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import SimpleImputer, IterativeImputer
@@ -13,12 +12,9 @@ import numpy as np
 import s3fs
 import crosswalks
 import numpy as np
-from bokeh.plotting import figure
-from bokeh.embed import components
-from bokeh.models import Span
-from bokeh.models import NumeralTickFormatter
-
-
+import json
+import plotly
+import plotly.graph_objects as go
 
 def load_data():
     s3 = s3fs.S3FileSystem(anon=True)
@@ -66,42 +62,34 @@ def train_model():
     modobj, modscore = trainmodel(X, y)
     return modobj, modscore, df
 
-def plot_hist(df, prediction=1):
-    hist, edges = np.histogram(df['EARN_MDN_HI_2YR'].astype(int), bins = 40)
+def plotly_hist(df, prediction=1, degreetype='All', majorfield = "All Fields"):
 
-    p = figure(
-        title="Histogram of Earnings, All Fields",
-        y_axis_label="Count",
-        x_axis_label="Earnings",
-        width=750,
-        height=300,
+    plot_series1 = df[df.CREDDESC == degreetype]['EARN_MDN_HI_2YR'].astype(int)
+    plot_series2 = df[(df.CIPDESC_new == majorfield) & (df.CREDDESC == degreetype)]['EARN_MDN_HI_2YR'].astype(int)
+               
+    fig = go.Figure()
+    fig.add_trace(go.Histogram(x=plot_series1, name = "All Fields",histnorm='percent', xbins=dict(size = 1000)))
+    fig.add_trace(go.Histogram(x=plot_series2, name = majorfield, histnorm='percent', xbins=dict(size = 1000)))
+    
+    fig.update_layout(
+        barmode='overlay',
+        title_text=f'Median Earnings, {degreetype}', # title of plot
+        xaxis_title_text='USD ($)', # xaxis label
+        yaxis_title_text='Percent of Total', # yaxis label
+        bargap=0.2, # gap between bars of adjacent location coordinates
+        bargroupgap=0.1, # gap between bars of the same location coordinates
+        template = "plotly_white",
+        font=dict(
+            family="Helvetica",
+            size=12
+        ),
+        legend=dict(yanchor = 'top', y=1, 
+                    xanchor = 'right', x = 1)
     )
+    fig.add_vline(x=prediction, line_dash="dash", annotation_text=f"Predicted: ${round(prediction, 2):,}")
 
-    p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:])
-    vline = Span(location=prediction, dimension='height', line_color='red', line_width=3)
-    p.renderers.extend([vline])
-    p.xaxis[0].formatter = NumeralTickFormatter(format="$%.0f")
-
-    return p
-
-
-def plot_groupdist(df, prediction=1, majorfield = 'Accounting and Related Services.'):  
-    hist, edges = np.histogram(df[df.CIPDESC_new == majorfield]['EARN_MDN_HI_2YR'].astype(int), bins = 40)
-
-    p = figure(
-        title=f"Histogram of Earnings, {majorfield}",
-        y_axis_label="Count",
-        x_axis_label="Earnings",
-        width=750,
-        height=300,
-    )
-
-    p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:])
-    vline = Span(location=prediction, dimension='height', line_color='red', line_width=3)
-    p.renderers.extend([vline])
-    p.xaxis[0].formatter = NumeralTickFormatter(format="$%.0f")
-
-    return p
+    fig.update_traces(opacity=0.55)
+    return fig
     
 
 app = Flask(__name__)
@@ -154,11 +142,9 @@ def result(modobj=modobj, df=df):
 
     [[prediction]] = modobj.predict(newdf)
     pred_final = prediction if prediction > 0 else np.nan
+    p3 = plotly_hist(df=df, degreetype = cred, prediction=pred_final, majorfield=cip)
+    graphJSON = json.dumps(p3, cls=plotly.utils.PlotlyJSONEncoder)
 
-    p1 = plot_hist(df=df, prediction=pred_final)
-    p2 = plot_groupdist(df=df, prediction=pred_final, majorfield=cip)
-    script, div = components(p1)
-    script2, div2 = components(p2)
 
     return render_template(
         'result.html', 
@@ -171,6 +157,5 @@ def result(modobj=modobj, df=df):
         sat=sat_val, 
         tuit = tuit_val,
         adm = adm_val,
-        script=script, div=div,
-        script2=script2, div2=div2
+        graphJSON=graphJSON
    )

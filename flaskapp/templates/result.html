@@ -1,12 +1,6 @@
 {% extends "design.html" %}
 
 {% block head %}
-<!-- Load BokehJS components -->
-<script type="text/javascript" src="http://cdn.pydata.org/bokeh/release/bokeh-2.3.2.min.js"></script>
-
-    {{ script | safe }}
-
-    {{ script2 | safe }}
 {% endblock %}
 
 {% block content %}
@@ -30,8 +24,12 @@ Two years after graduating, median earnings should be roughly <b> {{"${:,.2f}".f
 
 <p style="font-size: 12px;"> If combination of values is extremely rare/unlikely in training data, model may return NA.</p>
 
-{{ div | safe }}
+<div id="tester" style="width:900px;height:450px;"></div>
 
-{{ div2 | safe }}
+<script>
+    TESTER = document.getElementById('tester');
+    var GRAPH = {{ graphJSON | safe }}
 
+    Plotly.plot(TESTER, GRAPH, {} );
+</script>
 {% endblock %}
