@@ -1,0 +1,26 @@
+  
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Demo Model Deployment</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='main.css') }}" />
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    {% block head %}
+    {% endblock %}
+  </head>
+
+  <body>
+    {% block content %}
+    {% endblock %}
+  </body>
+
+  <footer>
+    <h6>Courtesy of Saturn Cloud</h6>
+    <script src="{{ url_for('static',filename='main.js') }}"></script>
+ 
+  </footer>
+
+</html>

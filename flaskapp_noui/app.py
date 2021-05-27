@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, render_template, request, flash
+from flask import Flask, jsonify, render_template, request
 from sklearn.model_selection import train_test_split
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import SimpleImputer, IterativeImputer
@@ -13,8 +13,6 @@ import s3fs
 import crosswalks
 import numpy as np
 import json
-import plotly
-import plotly.graph_objects as go
 
 def load_data():
     s3 = s3fs.S3FileSystem(anon=True)
@@ -62,36 +60,6 @@ def train_model():
     modobj, modscore = trainmodel(X, y)
     return modobj, modscore, df
 
-def plotly_hist(df, prediction=1, degreetype='All', majorfield = "All Fields"):
-
-    plot_series1 = df[df.CREDDESC == degreetype]['EARN_MDN_HI_2YR'].astype(int)
-    plot_series2 = df[(df.CIPDESC_new == majorfield) & (df.CREDDESC == degreetype)]['EARN_MDN_HI_2YR'].astype(int)
-               
-    fig = go.Figure()
-    fig.add_trace(go.Histogram(x=plot_series1, name = "All Fields",histnorm='percent', xbins=dict(size = 1000)))
-    fig.add_trace(go.Histogram(x=plot_series2, name = majorfield, histnorm='percent', xbins=dict(size = 1000)))
-    
-    fig.update_layout(
-        barmode='overlay',
-        title_text=f'Median Earnings, {degreetype}', # title of plot
-        xaxis_title_text='USD ($)', # xaxis label
-        yaxis_title_text='Percent of Total', # yaxis label
-        bargap=0.2, # gap between bars of adjacent location coordinates
-        bargroupgap=0.1, # gap between bars of the same location coordinates
-        template = "plotly_white",
-        font=dict(
-            family="Helvetica",
-            size=12
-        ),
-        legend=dict(yanchor = 'top', y=1, 
-                    xanchor = 'right', x = 1)
-    )
-    fig.add_vline(x=prediction, line_dash="dash", annotation_text=f"Predicted: ${round(prediction, 2):,}")
-
-    fig.update_traces(opacity=0.55)
-    return fig
-    
-
 app = Flask(__name__)
 modobj, modscore, df = train_model()
 creds = sorted(list(df['CREDDESC'].unique()), reverse = True)
@@ -116,46 +84,36 @@ def index():
     adm_min = min(df['ADM_RATE_ALL'].astype(float)),
     adm_max = max(df['ADM_RATE_ALL'].astype(float)))
 
-@app.route('/result')
-def result(modobj=modobj, df=df):
+@app.route('/api/v1/')
+def result():
 
-    loc_val = request.args.get('locale', '')
-    cip_val = request.args.get('cip', '')
-    cred_val = request.args.get('cred', '')
-    reg_val = request.args.get('region', '')
-    adm_val = request.args.get('adm', '', type= float)
-    tuit_val = request.args.get('tuit', '', type= int)
-    collegetype_val = request.args.get('coltype', '')
-    sat_val = request.args.get('sat_number', '', type= int)
+    variables = {'SAT_AVG_ALL':'sat',
+                'CREDDESC':'cred',
+                'CIPDESC_new':'cip', 
+                'CONTROL':'coltype', 
+                'REGION':'region',
+                'tuition':'tuit',
+                'LOCALE':'locale', 
+                'ADM_RATE_ALL':'adm', 
+        }
+    for i in variables:
+        if variables[i] in request.args:
+            if variables[i]  == 'adm':
+                variables[i] = request.args.get(variables[i], '', type= float)
+            elif (variables[i] == 'tuit') | (variables[i] == 'sat'):
+                variables[i] = request.args.get(variables[i], '', type= int)
+            else:
+                variables[i] = request.args.get(variables[i], '')
+        else:
+            return f"Error: No {variables[i]} field provided. Please specify {variables[i]}."
 
-    sat= sat_val
-    cred=cred_val
-    cip=cip_val
-    col=collegetype_val
-    reg=reg_val
-    tuit=tuit_val
-    loc=loc_val
-    adm=adm_val
-
-    newdf = pd.DataFrame([[sat, cred, cip, col, reg, tuit, loc, adm]], 
-        columns = ['SAT_AVG_ALL','CREDDESC', 'CIPDESC_new','CONTROL', 'REGION', 'tuition', 'LOCALE', 'ADM_RATE_ALL'])
+    newdf = pd.DataFrame([variables])
 
     [[prediction]] = modobj.predict(newdf)
     pred_final = prediction if prediction > 0 else np.nan
-    p3 = plotly_hist(df=df, degreetype = cred, prediction=pred_final, majorfield=cip)
-    graphJSON = json.dumps(p3, cls=plotly.utils.PlotlyJSONEncoder)
 
+    variables['predicted_earn'] = pred_final
+    return  jsonify(variables)
 
-    return render_template(
-        'result.html', 
-        locale = loc_val, 
-        collegetype = collegetype_val, 
-        cip = cip_val, 
-        cred = cred_val, 
-        pred_final = round(pred_final, 2), 
-        region=reg_val,
-        sat=sat_val, 
-        tuit = tuit_val,
-        adm = adm_val,
-        graphJSON=graphJSON
-   )
+if __name__ == "__main__":
+  app.run()
